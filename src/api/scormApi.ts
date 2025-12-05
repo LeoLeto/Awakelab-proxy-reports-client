@@ -27,6 +27,8 @@ export async function fetchLicenseDetails(params?: {
       // Authorization: `Bearer ${import.meta.env.VITE_FRONTEND_API_KEY}`
     },
   });
+  
+  console.log("🚀 ~ res: ", res)
 
   if (!res.data.ok)
     throw new Error(res.data.error ?? "failed to fetch licenses");

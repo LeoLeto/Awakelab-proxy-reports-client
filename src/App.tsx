@@ -9,7 +9,11 @@ export default function App() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const rows = await fetchLicenseDetails();
+      const rows = await fetchLicenseDetails({
+        date_from: "2025-04-01",
+        date_to: "2025-04-30",
+        page: 1,
+      });
       setLicenses(rows);
       setLoading(false);
     })();
@@ -21,9 +25,7 @@ export default function App() {
 
       {loading && <p>Loading…</p>}
 
-      {!loading && (
-        <pre>{JSON.stringify(licenses, null, 2)}</pre>
-      )}
+      {!loading && <pre>{JSON.stringify(licenses, null, 2)}</pre>}
     </div>
   );
 }

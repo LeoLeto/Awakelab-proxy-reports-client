@@ -81,6 +81,25 @@ export default function App() {
       "Tracking Elapsed Time": license.tracking_elapsed_time || "",
     })));
 
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 15 }, // Customer Ref
+      { wch: 30 }, // Customer Name
+      { wch: 20 }, // User Username
+      { wch: 30 }, // User Fullname
+      { wch: 15 }, // Product Ref
+      { wch: 40 }, // Product Title
+      { wch: 18 }, // Product Duration
+      { wch: 15 }, // Product Price
+      { wch: 20 }, // License Details
+      { wch: 18 }, // License Start
+      { wch: 18 }, // License End
+      { wch: 22 }, // Tracking First Access
+      { wch: 22 }, // Tracking Last Access
+      { wch: 15 }, // Tracking Visits
+      { wch: 22 }, // Tracking Elapsed Time
+    ];
+
     // Create workbook and add worksheet
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Licenses");

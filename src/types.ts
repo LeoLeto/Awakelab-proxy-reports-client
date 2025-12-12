@@ -9,6 +9,8 @@ export type LicenseRow = {
   product_duration: string | null;
   product_price: string | null;
   license_details: string | null;
+  license_start: string | null;
+  license_end: string | null;
   tracking_first_access: string | null;
   tracking_last_access: string | null;
   tracking_visits: string | null;

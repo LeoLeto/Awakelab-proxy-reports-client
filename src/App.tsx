@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { fetchLicenseDetails, ingestLicenses, fetchCustomers } from "./api/scormApi";
+import { fetchLicenseDetails, ingestLicenses, fetchCustomers, fetchProducts } from "./api/scormApi";
 import type { LicenseRow, IngestReport } from "./types";
 import { SimpleTable } from "./components/SimpleTable";
 import * as XLSX from "xlsx";
 import "./App.css";
 
-const APP_VERSION = "v1.3";
+const APP_VERSION = "v1.4";
 
 // Get last 30 days date range
 const getLast30DaysRange = () => {
@@ -49,12 +49,14 @@ const calculateDuration = (startDate: string | null | undefined, endDate: string
 export default function App() {
   const [licenses, setLicenses] = useState<LicenseRow[]>([]);
   const [customers, setCustomers] = useState<string[]>([]);
+  const [products, setProducts] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
   const [ingestReport, setIngestReport] = useState<IngestReport | null>(null);
   const [dateFrom, setDateFrom] = useState(firstDay);
   const [dateTo, setDateTo] = useState(lastDayStr);
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
+  const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [showReference, setShowReference] = useState(false);
 
   const loadData = async () => {
@@ -65,6 +67,7 @@ export default function App() {
         date_to: dateTo,
         page: 1,
         customer_name: selectedCustomer || undefined,
+        product_title: selectedProduct || undefined,
       });
       setLicenses(rows);
     } catch (error) {
@@ -80,6 +83,18 @@ export default function App() {
       setCustomers(customerList);
     } catch (error) {
       console.error("Error loading customers:", error);
+    }
+  };
+
+  const loadProducts = async (customerName: string) => {
+    try {
+      console.log("Loading products for customer:", customerName);
+      const productList = await fetchProducts(customerName);
+      console.log("Products loaded:", productList);
+      setProducts(productList);
+    } catch (error) {
+      console.error("Error loading products:", error);
+      setProducts([]);
     }
   };
 
@@ -157,8 +172,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (selectedCustomer) {
+      loadProducts(selectedCustomer);
+      setSelectedProduct(""); // Reset product when customer changes
+    } else {
+      setProducts([]);
+      setSelectedProduct("");
+    }
     loadData();
   }, [selectedCustomer]);
+
+  useEffect(() => {
+    loadData();
+  }, [selectedProduct]);
 
   return (
     <div style={{ padding: "20px", position: "relative" }}>
@@ -288,6 +314,28 @@ export default function App() {
             ))}
           </select>
         </label>
+        <label>
+          Product:
+          <select
+            value={selectedProduct}
+            onChange={(e) => setSelectedProduct(e.target.value)}
+            disabled={!selectedCustomer}
+            style={{ 
+              marginLeft: "8px", 
+              padding: "4px", 
+              minWidth: "200px",
+              opacity: selectedCustomer ? 1 : 0.5,
+              cursor: selectedCustomer ? "pointer" : "not-allowed"
+            }}
+          >
+            <option value="">All Products</option>
+            {products.map((product) => (
+              <option key={product} value={product}>
+                {product}
+              </option>
+            ))}
+          </select>
+        </label>
         <button onClick={loadData} disabled={loading} style={{ padding: "6px 16px" }}>
           {loading ? "Loading..." : "Search"}
         </button>
@@ -347,7 +395,7 @@ export default function App() {
               render: (value) => formatDate(value)
             },
             {
-              key: "license_start",
+              key: "license_duration",
               label: "License Duration",
               render: (_, row) => calculateDuration(row.license_start, row.license_end)
             },

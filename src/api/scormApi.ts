@@ -8,6 +8,7 @@ export async function fetchLicenseDetails(params?: {
   date_to?: string;
   page?: number;
   customer_name?: string;
+  product_title?: string;
 }): Promise<LicenseRow[]> {
   const url = `${API_BASE}/api/license-details`;
 
@@ -16,6 +17,7 @@ export async function fetchLicenseDetails(params?: {
     date_to: params?.date_to,
     page: params?.page ?? 1,
     customer_name: params?.customer_name,
+    product_title: params?.product_title,
   };
 
   const res = await axios.post<{
@@ -53,4 +55,13 @@ export async function fetchCustomers(): Promise<string[]> {
   if (!res.data.ok || !res.data.customers)
     throw new Error(res.data.error ?? "failed to fetch customers");
   return res.data.customers.map(c => c.customer_name);
+}
+
+export async function fetchProducts(customerName: string): Promise<string[]> {
+  const url = `${API_BASE}/api/products?customer_name=${encodeURIComponent(customerName)}`;
+  const res = await axios.get<{ ok: boolean; products?: { product_title: string }[]; error?: string }>(url);
+  
+  if (!res.data.ok || !res.data.products)
+    throw new Error(res.data.error ?? "failed to fetch products");
+  return res.data.products.map(p => p.product_title);
 }

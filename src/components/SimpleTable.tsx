@@ -1,6 +1,6 @@
 import React from 'react';
 
-type Column<T> = { key: keyof T; label: string; width?: string; render?: (value: any, row: T) => React.ReactNode };
+type Column<T> = { key: keyof T | string; label: string; width?: string; render?: (value: any, row: T) => React.ReactNode };
 
 export function SimpleTable<T extends Record<string, any>>(props: {
   columns: Column<T>[];

@@ -7,6 +7,7 @@ export async function fetchLicenseDetails(params?: {
   date_from?: string;
   date_to?: string;
   page?: number;
+  customer_name?: string;
 }): Promise<LicenseRow[]> {
   const url = `${API_BASE}/api/license-details`;
 
@@ -14,6 +15,7 @@ export async function fetchLicenseDetails(params?: {
     date_from: params?.date_from,
     date_to: params?.date_to,
     page: params?.page ?? 1,
+    customer_name: params?.customer_name,
   };
 
   const res = await axios.post<{
@@ -42,4 +44,13 @@ export async function ingestLicenses(): Promise<IngestReport> {
   if (!res.data.ok || !res.data.report)
     throw new Error(res.data.error ?? "failed to ingest licenses");
   return res.data.report;
+}
+
+export async function fetchCustomers(): Promise<string[]> {
+  const url = `${API_BASE}/api/customers`;
+  const res = await axios.get<{ ok: boolean; customers?: { customer_name: string }[]; error?: string }>(url);
+  
+  if (!res.data.ok || !res.data.customers)
+    throw new Error(res.data.error ?? "failed to fetch customers");
+  return res.data.customers.map(c => c.customer_name);
 }

@@ -1,31 +1,58 @@
 import { useEffect, useState } from "react";
-import { fetchLicenseDetails, ingestLicenses } from "./api/scormApi";
+import { fetchLicenseDetails, ingestLicenses, fetchCustomers } from "./api/scormApi";
 import type { LicenseRow, IngestReport } from "./types";
 import { SimpleTable } from "./components/SimpleTable";
 import * as XLSX from "xlsx";
 import "./App.css";
 
-// Get last month's date range
-const getLastMonthRange = () => {
+// Get last 30 days date range
+const getLast30DaysRange = () => {
   const now = new Date();
-  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const year = lastMonth.getFullYear();
-  const month = String(lastMonth.getMonth() + 1).padStart(2, '0');
-  const firstDay = `${year}-${month}-01`;
-  const lastDay = new Date(year, lastMonth.getMonth() + 1, 0).getDate();
-  const lastDayStr = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-  return { firstDay, lastDayStr };
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+  
+  const formatDateForInput = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  return { firstDay: formatDateForInput(thirtyDaysAgo), lastDayStr: formatDateForInput(now) };
 };
 
-const { firstDay, lastDayStr } = getLastMonthRange();
+const { firstDay, lastDayStr } = getLast30DaysRange();
+
+// Format date to user-friendly format (e.g., "Jun 6, 2025")
+const formatDate = (dateString: string | null | undefined) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+};
+
+// Calculate duration in days between two dates
+const calculateDuration = (startDate: string | null | undefined, endDate: string | null | undefined) => {
+  if (!startDate || !endDate) return '';
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return `${diffDays} days`;
+};
 
 export default function App() {
   const [licenses, setLicenses] = useState<LicenseRow[]>([]);
+  const [customers, setCustomers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
   const [ingestReport, setIngestReport] = useState<IngestReport | null>(null);
   const [dateFrom, setDateFrom] = useState(firstDay);
   const [dateTo, setDateTo] = useState(lastDayStr);
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
 
   const loadData = async () => {
     setLoading(true);
@@ -34,12 +61,22 @@ export default function App() {
         date_from: dateFrom,
         date_to: dateTo,
         page: 1,
+        customer_name: selectedCustomer || undefined,
       });
       setLicenses(rows);
     } catch (error) {
       console.error("Error loading licenses:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCustomers = async () => {
+    try {
+      const customerList = await fetchCustomers();
+      setCustomers(customerList);
+    } catch (error) {
+      console.error("Error loading customers:", error);
     }
   };
 
@@ -75,13 +112,10 @@ export default function App() {
       "Product Title": license.product_title || "",
       "Product Duration": license.product_duration || "",
       "Product Price": license.product_price || "",
-      "License Details": license.license_details || "",
-      "License Start": license.license_start || "",
-      "License End": license.license_end || "",
+      "License Start": formatDate(license.license_start),
+      "License End": formatDate(license.license_end),
+      "License Duration": calculateDuration(license.license_start, license.license_end),
       "Tracking First Access": license.tracking_first_access || "",
-      "Tracking Last Access": license.tracking_last_access || "",
-      "Tracking Visits": license.tracking_visits || "",
-      "Tracking Elapsed Time": license.tracking_elapsed_time || "",
     })));
 
     // Set column widths
@@ -97,13 +131,10 @@ export default function App() {
       { wch: 40 }, // Product Title
       { wch: 18 }, // Product Duration
       { wch: 15 }, // Product Price
-      { wch: 20 }, // License Details
       { wch: 18 }, // License Start
       { wch: 18 }, // License End
+      { wch: 18 }, // License Duration
       { wch: 22 }, // Tracking First Access
-      { wch: 22 }, // Tracking Last Access
-      { wch: 15 }, // Tracking Visits
-      { wch: 22 }, // Tracking Elapsed Time
     ];
 
     // Create workbook and add worksheet
@@ -119,13 +150,28 @@ export default function App() {
 
   useEffect(() => {
     loadData();
+    loadCustomers();
   }, []);
 
-  return (
-    <div style={{ padding: "20px" }}>
-      <h1>License Details</h1>
+  useEffect(() => {
+    loadData();
+  }, [selectedCustomer]);
 
-      <div style={{ marginBottom: "20px", display: "flex", gap: "10px", alignItems: "center" }}>
+  return (
+    <div style={{ padding: "20px", position: "relative" }}>
+      <div style={{ 
+        position: "absolute", 
+        top: "10px", 
+        right: "20px", 
+        fontSize: "14px", 
+        color: "#888",
+        fontFamily: "monospace"
+      }}>
+        v1.2
+      </div>
+      <h1 style={{ marginTop: "0" }}>License Details</h1>
+
+      <div style={{ marginBottom: "20px", display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
         <label>
           Date From:
           <input
@@ -143,6 +189,21 @@ export default function App() {
             onChange={(e) => setDateTo(e.target.value)}
             style={{ marginLeft: "8px", padding: "4px" }}
           />
+        </label>
+        <label>
+          Customer:
+          <select
+            value={selectedCustomer}
+            onChange={(e) => setSelectedCustomer(e.target.value)}
+            style={{ marginLeft: "8px", padding: "4px", minWidth: "200px" }}
+          >
+            <option value="">All Customers</option>
+            {customers.map((customer) => (
+              <option key={customer} value={customer}>
+                {customer}
+              </option>
+            ))}
+          </select>
         </label>
         <button onClick={loadData} disabled={loading} style={{ padding: "6px 16px" }}>
           {loading ? "Loading..." : "Search"}
@@ -192,9 +253,21 @@ export default function App() {
             { key: "customer_url3", label: "URL 3" },
             { key: "user_fullname", label: "User" },
             { key: "product_title", label: "Product" },
-            { key: "license_start", label: "License Start" },
-            { key: "license_end", label: "License End" },
-            { key: "tracking_visits", label: "Visits" },
+            { 
+              key: "license_start", 
+              label: "License Start",
+              render: (value) => formatDate(value)
+            },
+            { 
+              key: "license_end", 
+              label: "License End",
+              render: (value) => formatDate(value)
+            },
+            {
+              key: "license_start",
+              label: "License Duration",
+              render: (_, row) => calculateDuration(row.license_start, row.license_end)
+            },
           ]}
           rows={licenses}
         />

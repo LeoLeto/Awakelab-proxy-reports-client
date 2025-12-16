@@ -5,7 +5,7 @@ import { SimpleTable } from "./components/SimpleTable";
 import * as XLSX from "xlsx";
 import "./App.css";
 
-const APP_VERSION = "v1.5";
+const APP_VERSION = "v1.6";
 
 // Get last 30 days date range
 const getLast30DaysRange = () => {
@@ -25,11 +25,11 @@ const getLast30DaysRange = () => {
 
 const { firstDay, lastDayStr } = getLast30DaysRange();
 
-// Format date to user-friendly format (e.g., "Jun 6, 2025")
+// Format date to user-friendly format (e.g., "6 jun 2025")
 const formatDate = (dateString: string | null | undefined) => {
   if (!dateString) return '';
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { 
+  return date.toLocaleDateString('es-ES', { 
     year: 'numeric', 
     month: 'short', 
     day: 'numeric' 
@@ -43,7 +43,7 @@ const calculateDuration = (startDate: string | null | undefined, endDate: string
   const end = new Date(endDate);
   const diffTime = Math.abs(end.getTime() - start.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return `${diffDays} days`;
+  return `${diffDays} días`;
 };
 
 export default function App() {
@@ -69,7 +69,7 @@ export default function App() {
       });
       setAllLicenses(rows);
     } catch (error) {
-      console.error("Error loading licenses:", error);
+      console.error("Error al cargar licencias:", error);
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export default function App() {
       const customerList = await fetchCustomers();
       setCustomers(customerList);
     } catch (error) {
-      console.error("Error loading customers:", error);
+      console.error("Error al cargar clientes:", error);
     }
   };
 
@@ -112,8 +112,8 @@ export default function App() {
       // Reload data after ingestion
       await loadData();
     } catch (error) {
-      console.error("Error ingesting licenses:", error);
-      alert("Error updating database");
+      console.error("Error al ingerir licencias:", error);
+      alert("Error al actualizar la base de datos");
     } finally {
       setIngesting(false);
     }
@@ -208,10 +208,10 @@ export default function App() {
             color: "#666"
           }}
         >
-          ℹ️ Column Reference
+          ℹ️ Referencia de Columnas
         </button>
       </div>
-      <h1 style={{ marginTop: "0" }}>License Details</h1>
+      <h1 style={{ marginTop: "0" }}>Detalles de Licencias</h1>
 
       {showReference && (
         <div style={{
@@ -224,7 +224,7 @@ export default function App() {
           maxWidth: "600px",
           color: "#333"
         }}>
-          <strong>Excel Column Reference:</strong>
+          <strong>Referencia de Columnas Excel:</strong>
           <div style={{ marginTop: "8px", display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "8px", alignItems: "center" }}>
             <span style={{ color: "#666" }}>User Username</span>
             <span>→</span>
@@ -275,7 +275,7 @@ export default function App() {
 
       <div style={{ marginBottom: "20px", display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
         <label>
-          Date From:
+          Fecha Desde:
           <input
             type="date"
             value={dateFrom}
@@ -284,7 +284,7 @@ export default function App() {
           />
         </label>
         <label>
-          Date To:
+          Fecha Hasta:
           <input
             type="date"
             value={dateTo}
@@ -293,13 +293,13 @@ export default function App() {
           />
         </label>
         <label>
-          Customer:
+          Cliente:
           <select
             value={selectedCustomer}
             onChange={(e) => setSelectedCustomer(e.target.value)}
             style={{ marginLeft: "8px", padding: "4px", minWidth: "200px" }}
           >
-            <option value="">All Customers</option>
+            <option value="">Todos los Clientes</option>
             {customers.map((customer) => (
               <option key={customer} value={customer}>
                 {customer}
@@ -308,7 +308,7 @@ export default function App() {
           </select>
         </label>
         <label>
-          Product:
+          Producto:
           <select
             value={selectedProduct}
             onChange={(e) => setSelectedProduct(e.target.value)}
@@ -321,7 +321,7 @@ export default function App() {
               cursor: selectedCustomer ? "pointer" : "not-allowed"
             }}
           >
-            <option value="">All Products</option>
+            <option value="">Todos los Productos</option>
             {products.map((product) => (
               <option key={product} value={product}>
                 {product}
@@ -330,21 +330,21 @@ export default function App() {
           </select>
         </label>
         <button onClick={loadData} disabled={loading} style={{ padding: "6px 16px" }}>
-          {loading ? "Loading..." : "Search"}
+          {loading ? "Cargando..." : "Buscar"}
         </button>
         <button 
           onClick={handleIngest} 
           disabled={ingesting || loading} 
           style={{ padding: "6px 16px", backgroundColor: "#4CAF50", color: "white", border: "none", borderRadius: "4px", cursor: ingesting ? "not-allowed" : "pointer" }}
         >
-          {ingesting ? "Updating..." : "Update Database"}
+          {ingesting ? "Actualizando..." : "Actualizar Base de Datos"}
         </button>
         <button 
           onClick={handleDownloadExcel} 
           disabled={loading || licenses.length === 0} 
           style={{ padding: "6px 16px", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "4px", cursor: (loading || licenses.length === 0) ? "not-allowed" : "pointer" }}
         >
-          📥 Download Excel
+          📥 Descargar Excel
         </button>
       </div>
 
@@ -357,39 +357,39 @@ export default function App() {
           borderRadius: "4px",
           color: "#155724"
         }}>
-          <strong>Database updated successfully!</strong>
+          <strong>¡Base de datos actualizada exitosamente!</strong>
           <div style={{ marginTop: "8px" }}>
-            <div>📥 New entries from API: <strong>{ingestReport.fetched}</strong></div>
-            <div>💾 Inserted to database: <strong>{ingestReport.upserted}</strong></div>
-            <div>📅 Date range: <strong>{ingestReport.fromDate}</strong> to <strong>{ingestReport.toDate}</strong></div>
+            <div>📥 Nuevas entradas desde API: <strong>{ingestReport.fetched}</strong></div>
+            <div>💾 Insertadas en base de datos: <strong>{ingestReport.upserted}</strong></div>
+            <div>📅 Rango de fechas: <strong>{ingestReport.fromDate}</strong> a <strong>{ingestReport.toDate}</strong></div>
           </div>
         </div>
       )}
 
-      {loading && <p>Loading…</p>}
+      {loading && <p>Cargando…</p>}
 
       {!loading && (
         <SimpleTable
           columns={[
-            { key: "customer_name", label: "Customer" },
+            { key: "customer_name", label: "Cliente" },
             { key: "customer_url", label: "URL" },
             { key: "customer_url2", label: "URL 2" },
             { key: "customer_url3", label: "URL 3" },
-            { key: "user_fullname", label: "User" },
-            { key: "product_title", label: "Product" },
+            { key: "user_fullname", label: "Usuario" },
+            { key: "product_title", label: "Producto" },
             { 
               key: "license_start", 
-              label: "License Start",
+              label: "Inicio de Licencia",
               render: (value) => formatDate(value)
             },
             { 
               key: "license_end", 
-              label: "License End",
+              label: "Fin de Licencia",
               render: (value) => formatDate(value)
             },
             {
               key: "license_duration",
-              label: "License Duration",
+              label: "Duración de Licencia",
               render: (_, row) => calculateDuration(row.license_start, row.license_end)
             },
           ]}

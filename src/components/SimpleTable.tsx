@@ -35,7 +35,7 @@ export function SimpleTable<T extends Record<string, any>>(props: {
           {rows.length === 0 && (
             <tr>
               <td colSpan={columns.length} style={{ padding: 12, color: '#666' }}>
-                No rows
+                Sin filas
               </td>
             </tr>
           )}

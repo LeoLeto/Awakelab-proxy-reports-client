@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { LicenseRow, IngestReport } from "../types";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "";
+const API_BASE = import.meta.env.VITE_API_BASE ?? import.meta.env.VITE_API_BASE_URL ?? "https://proxy-reports.awakelab.world";
 
 // Token management
 let authToken: string | null = null;

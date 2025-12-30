@@ -1,10 +1,24 @@
 import axios from "axios";
 import type { LicenseRow, IngestReport } from "../types";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? import.meta.env.VITE_API_BASE_URL ?? "https://proxy-reports.awakelab.world";
+// Use env variable if set, otherwise detect based on hostname
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  // Auto-detect: if running on localhost, use local API
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:3000';
+  }
+  // Production default
+  return 'https://proxy-reports.awakelab.world';
+};
+
+const API_BASE = getApiBase();
 
 // Token management
 let authToken: string | null = null;
+let onUnauthorized: (() => void) | null = null;
 
 export function setAuthToken(token: string | null) {
   authToken = token;
@@ -13,6 +27,22 @@ export function setAuthToken(token: string | null) {
 export function getAuthToken(): string | null {
   return authToken;
 }
+
+export function setUnauthorizedHandler(handler: () => void) {
+  onUnauthorized = handler;
+}
+
+// Setup axios interceptor to handle 401 errors
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && onUnauthorized) {
+      // Token expired or invalid - trigger logout
+      onUnauthorized();
+    }
+    return Promise.reject(error);
+  }
+);
 
 function getAuthHeaders() {
   const headers: Record<string, string> = {

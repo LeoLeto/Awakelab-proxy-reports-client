@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { fetchLicenseDetails, ingestLicenses, fetchCustomers, setAuthToken } from "./api/scormApi";
+import { fetchLicenseDetails, ingestLicenses, fetchCustomers, setAuthToken, setUnauthorizedHandler } from "./api/scormApi";
 import type { LicenseRow, IngestReport } from "./types";
 import { SimpleTable } from "./components/SimpleTable";
 import { Login } from "./components/Login";
 import * as XLSX from "xlsx";
 import "./App.css";
 
-const APP_VERSION = "v1.6";
+const APP_VERSION = "v1.7";
 
 // Get last 30 days date range
 const getLast30DaysRange = () => {
@@ -178,10 +178,41 @@ export default function App() {
     const storedUser = localStorage.getItem("authUser");
     
     if (storedToken && storedUser) {
+      // Check if token is expired before using it
+      try {
+        const payload = JSON.parse(atob(storedToken.split('.')[1]));
+        const expirationTime = payload.exp * 1000; // Convert to milliseconds
+        
+        if (Date.now() >= expirationTime) {
+          // Token has expired - clear it immediately
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("authUser");
+          setAuthToken(null);
+          setIsAuthenticated(false);
+          setCurrentUser("");
+          return;
+        }
+      } catch {
+        // Invalid token format - clear it
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("authUser");
+        return;
+      }
+
       setAuthToken(storedToken);
       setIsAuthenticated(true);
       setCurrentUser(storedUser);
     }
+
+    // Setup handler for 401 responses (expired/invalid tokens)
+    setUnauthorizedHandler(() => {
+      // Token expired - log user out automatically
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("authUser");
+      setAuthToken(null);
+      setIsAuthenticated(false);
+      setCurrentUser("");
+    });
   }, []);
 
   const handleLogin = (token: string, username: string) => {

@@ -62,7 +62,7 @@ export async function fetchLicenseDetails(params?: {
   page?: number;
   customer_name?: string;
   product_title?: string;
-}): Promise<LicenseRow[]> {
+}): Promise<{ licenses: LicenseRow[], total: number }> {
   const url = `${API_BASE}/api/license-details`;
 
   const body = {
@@ -76,6 +76,7 @@ export async function fetchLicenseDetails(params?: {
   const res = await axios.post<{
     ok: boolean;
     license?: LicenseRow[];
+    total?: number;
     error?: string;
   }>(url, body, {
     headers: getAuthHeaders(),
@@ -85,6 +86,36 @@ export async function fetchLicenseDetails(params?: {
 
   if (!res.data.ok)
     throw new Error(res.data.error ?? "failed to fetch licenses");
+  return { licenses: res.data.license ?? [], total: res.data.total ?? 0 };
+}
+
+export async function fetchLicenseDetailsForExport(params?: {
+  date_from?: string;
+  date_to?: string;
+  customer_name?: string;
+  product_title?: string;
+}): Promise<LicenseRow[]> {
+  const url = `${API_BASE}/api/license-details/export`;
+
+  const body = {
+    date_from: params?.date_from,
+    date_to: params?.date_to,
+    customer_name: params?.customer_name,
+    product_title: params?.product_title,
+  };
+
+  const res = await axios.post<{
+    ok: boolean;
+    license?: LicenseRow[];
+    error?: string;
+  }>(url, body, {
+    headers: getAuthHeaders(),
+  });
+  
+  console.log("🚀 ~ export res: ", res.data.license?.length, "records")
+
+  if (!res.data.ok)
+    throw new Error(res.data.error ?? "failed to export licenses");
   return res.data.license ?? [];
 }
 

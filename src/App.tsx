@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { fetchLicenseDetails, ingestLicenses, fetchCustomers, setAuthToken, setUnauthorizedHandler } from "./api/scormApi";
+import { fetchLicenseDetails, fetchLicenseDetailsForExport, ingestLicenses, fetchCustomers, setAuthToken, setUnauthorizedHandler } from "./api/scormApi";
 import type { LicenseRow, IngestReport } from "./types";
 import { SimpleTable } from "./components/SimpleTable";
 import { Login } from "./components/Login";
 import * as XLSX from "xlsx";
 import "./App.css";
 
-const APP_VERSION = "v1.7";
+const APP_VERSION = "v1.8";
 
 // Get last 30 days date range
 const getLast30DaysRange = () => {
@@ -51,6 +51,7 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<string>("");
   const [allLicenses, setAllLicenses] = useState<LicenseRow[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [customers, setCustomers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [ingesting, setIngesting] = useState(false);
@@ -64,13 +65,14 @@ export default function App() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const rows = await fetchLicenseDetails({
+      const result = await fetchLicenseDetails({
         date_from: dateFrom,
         date_to: dateTo,
         page: 1,
         customer_name: selectedCustomer || undefined,
       });
-      setAllLicenses(rows);
+      setAllLicenses(result.licenses);
+      setTotalCount(result.total);
     } catch (error) {
       console.error("Error al cargar licencias:", error);
     } finally {
@@ -122,54 +124,73 @@ export default function App() {
     }
   };
 
-  const handleDownloadExcel = () => {
-    // Create worksheet from licenses data
-    const worksheet = XLSX.utils.json_to_sheet(licenses.map(license => ({
-      "Customer Ref": license.customer_ref || "",
-      "Entidad_consumo": license.customer_name || "",
-      "Customer URL": license.customer_url || "",
-      "Customer URL 2": license.customer_url2 || "",
-      "Customer URL 3": license.customer_url3 || "",
-      "Nombre de usuario": license.user_username || "",
-      "Nombre completo con enlace": license.user_fullname || "",
-      "Codigo_Curso": license.product_ref || "",
-      "Nombre completo del curso con enlace": license.product_title || "",
-      "Horas": license.product_duration || "",
-      "Precio_Producto": license.product_price || "",
-      "F_inicio_licencia": formatDate(license.license_start),
-      "F_fin_licencia": formatDate(license.license_end),
-      "Duracion_licencia": calculateDuration(license.license_start, license.license_end),
-      "Primer acceso a Scorm": license.tracking_first_access || "",
-    })));
+  const handleDownloadExcel = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch ALL matching records for export
+      const allRecords = await fetchLicenseDetailsForExport({
+        date_from: dateFrom,
+        date_to: dateTo,
+        customer_name: selectedCustomer || undefined,
+        product_title: selectedProduct || undefined,
+      });
+      
+      console.log("Exporting", allRecords.length, "records to Excel");
+      
+      // Create worksheet from all matching data
+      const worksheet = XLSX.utils.json_to_sheet(allRecords.map(license => ({
+        "Customer Ref": license.customer_ref || "",
+        "Entidad_consumo": license.customer_name || "",
+        "Customer URL": license.customer_url || "",
+        "Customer URL 2": license.customer_url2 || "",
+        "Customer URL 3": license.customer_url3 || "",
+        "Nombre de usuario": license.user_username || "",
+        "Nombre completo con enlace": license.user_fullname || "",
+        "Codigo_Curso": license.product_ref || "",
+        "Nombre completo del curso con enlace": license.product_title || "",
+        "Horas": license.product_duration || "",
+        "Precio_Producto": license.product_price || "",
+        "F_inicio_licencia": formatDate(license.license_start),
+        "F_fin_licencia": formatDate(license.license_end),
+        "Duracion_licencia": calculateDuration(license.license_start, license.license_end),
+        "Primer acceso a Scorm": license.tracking_first_access || "",
+      })));
 
-    // Set column widths
-    worksheet['!cols'] = [
-      { wch: 15 }, // Customer Ref
-      { wch: 30 }, // Customer Name
-      { wch: 35 }, // Customer URL
-      { wch: 35 }, // Customer URL 2
-      { wch: 35 }, // Customer URL 3
-      { wch: 20 }, // User Username
-      { wch: 30 }, // User Fullname
-      { wch: 15 }, // Product Ref
-      { wch: 40 }, // Product Title
-      { wch: 18 }, // Product Duration
-      { wch: 15 }, // Product Price
-      { wch: 18 }, // License Start
-      { wch: 18 }, // License End
-      { wch: 18 }, // License Duration
-      { wch: 22 }, // Tracking First Access
-    ];
+      // Set column widths
+      worksheet['!cols'] = [
+        { wch: 15 }, // Customer Ref
+        { wch: 30 }, // Customer Name
+        { wch: 35 }, // Customer URL
+        { wch: 35 }, // Customer URL 2
+        { wch: 35 }, // Customer URL 3
+        { wch: 20 }, // User Username
+        { wch: 30 }, // User Fullname
+        { wch: 15 }, // Product Ref
+        { wch: 40 }, // Product Title
+        { wch: 18 }, // Product Duration
+        { wch: 15 }, // Product Price
+        { wch: 18 }, // License Start
+        { wch: 18 }, // License End
+        { wch: 18 }, // License Duration
+        { wch: 22 }, // Tracking First Access
+      ];
 
-    // Create workbook and add worksheet
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Licenses");
+      // Create workbook and add worksheet
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Licenses");
 
-    // Generate filename with date range
-    const filename = `licenses_${dateFrom}_to_${dateTo}.xlsx`;
+      // Generate filename with date range
+      const filename = `licenses_${dateFrom}_to_${dateTo}.xlsx`;
 
-    // Download the file
-    XLSX.writeFile(workbook, filename);
+      // Download the file
+      XLSX.writeFile(workbook, filename);
+    } catch (error) {
+      console.error("Error generating Excel:", error);
+      alert("Error al generar el archivo Excel");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Check for stored token on mount
@@ -233,17 +254,18 @@ export default function App() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadData();
+      // Only load customers list on authentication, not data
+      // User must click "Buscar" to load data with their chosen filters
       loadCustomers();
     }
-  }, [isAuthenticated, loadData, loadCustomers]);
+  }, [isAuthenticated, loadCustomers]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      setSelectedProduct(""); // Reset product when customer changes
-      loadData();
+    if (isAuthenticated && selectedCustomer) {
+      // Reset product selection when customer changes
+      setSelectedProduct("");
     }
-  }, [selectedCustomer, isAuthenticated, loadData]);
+  }, [selectedCustomer, isAuthenticated]);
 
   // Show login screen if not authenticated
   if (!isAuthenticated) {
@@ -437,12 +459,32 @@ export default function App() {
         </button>
         <button 
           onClick={handleDownloadExcel} 
-          disabled={loading || licenses.length === 0} 
-          style={{ padding: "6px 16px", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "4px", cursor: (loading || licenses.length === 0) ? "not-allowed" : "pointer" }}
+          disabled={loading || totalCount === 0} 
+          style={{ padding: "6px 16px", backgroundColor: "#2196F3", color: "white", border: "none", borderRadius: "4px", cursor: (loading || totalCount === 0) ? "not-allowed" : "pointer" }}
         >
-          📥 Descargar Excel
+          📥 Descargar Excel {totalCount > 0 && `(${totalCount} registros)`}
         </button>
       </div>
+
+      {/* Pagination info */}
+      {!loading && totalCount > 0 && (
+        <div style={{ 
+          marginBottom: "16px", 
+          padding: "12px", 
+          backgroundColor: "#f0f8ff", 
+          border: "1px solid #b0d4f1", 
+          borderRadius: "4px",
+          color: "#1e3a5f",
+          fontSize: "14px"
+        }}>
+          📊 Mostrando <strong>{licenses.length}</strong> de <strong>{totalCount}</strong> resultados totales
+          {licenses.length < totalCount && (
+            <span style={{ marginLeft: "8px", color: "#555" }}>
+              (El Excel descargará todos los {totalCount} registros)
+            </span>
+          )}
+        </div>
+      )}
 
       {ingestReport && (
         <div style={{ 

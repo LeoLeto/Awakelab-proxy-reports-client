@@ -1,5 +1,8 @@
 import { useState, type FormEvent } from "react";
 import "./Login.css";
+import backgroundImg from "../assets/BACK-REPROXY-8.png";
+import reproxyLogoBlue from "../assets/REPROXY-logo-blue.png";
+import poweredByImg from "../assets/AWAKELAB-POWERED-BY-01-8.png";
 
 interface LoginProps {
   onLogin: (token: string, username: string) => void;
@@ -42,16 +45,21 @@ export function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="login-container">
+    <div
+      className="login-container"
+      style={{ backgroundImage: `url(${backgroundImg})` }}
+    >
       <div className="login-box">
-        <h1>Awakelab Reports</h1>
-        <h2>Iniciar Sesión</h2>
+        <div className="login-logo">
+          <img src={reproxyLogoBlue} alt="Reproxy" />
+        </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Usuario</label>
+            <label htmlFor="username">Nombre Usuario</label>
             <input
               id="username"
               type="text"
+              placeholder="User name"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -64,6 +72,7 @@ export function Login({ onLogin }: LoginProps) {
             <input
               id="password"
               type="password"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -73,9 +82,15 @@ export function Login({ onLogin }: LoginProps) {
           </div>
           {error && <div className="error-message">{error}</div>}
           <button type="submit" disabled={loading}>
-            {loading ? "Ingresando..." : "Ingresar"}
+            {loading ? "Ingresando..." : "Iniciar sesión"}
           </button>
         </form>
+        <hr className="login-separator" />
+        <p className="login-contact">Contacta a tu administrador para acceder</p>
+      </div>
+
+      <div className="login-powered-by">
+        <img src={poweredByImg} alt="Powered by Awakelab" />
       </div>
     </div>
   );

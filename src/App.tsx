@@ -335,7 +335,7 @@ export default function App() {
       <main style={{ flex: 1, padding: "24px 28px", boxSizing: "border-box" }}>
 
         {/* Page title row */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <div style={{ marginBottom: "20px" }}>
           <h1 style={{
             margin: 0,
             fontSize: "18px",
@@ -349,40 +349,6 @@ export default function App() {
             <span style={{ fontSize: "20px" }}>📋</span>
             LISTADO DE LICENCIAS
           </h1>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button
-              onClick={handleIngest}
-              disabled={ingesting || loading}
-              style={{
-                padding: "8px 20px",
-                backgroundColor: DARK_BLUE,
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontWeight: "600",
-                cursor: ingesting ? "not-allowed" : "pointer",
-                opacity: ingesting ? 0.65 : 1,
-              }}
-            >
-              {ingesting ? "Actualizando..." : "Actualizar Datos"}
-            </button>
-            <button
-              onClick={handleDownloadExcel}
-              disabled={loading || totalCount === 0}
-              style={{
-                padding: "8px 20px",
-                backgroundColor: CYAN,
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                fontWeight: "600",
-                cursor: (loading || totalCount === 0) ? "not-allowed" : "pointer",
-                opacity: (loading || totalCount === 0) ? 0.55 : 1,
-              }}
-            >
-              Descarga registros
-            </button>
-          </div>
         </div>
 
         {/* Column reference panel */}
@@ -498,31 +464,73 @@ export default function App() {
 
         {/* ── STATUS CARDS ── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-          {/* Última actualización */}
+          {/* Resultados de la actualización */}
           <div style={{ ...cardStyle, display: "flex", alignItems: "flex-start", gap: "16px" }}>
-            <span style={{ fontSize: "28px", flexShrink: 0 }}>🗄️</span>
-            <div>
-              <div style={{ fontWeight: "700", color: DARK_BLUE, fontSize: "13px", letterSpacing: "0.06em", marginBottom: "8px" }}>
-                ÚLTIMA ACTUALIZACIÓN:
-              </div>
-              {ingestReport ? (
-                <div style={{ fontSize: "13px", color: CYAN, lineHeight: "1.8" }}>
-                  <div>Nuevas entradas desde API: {ingestReport.fetched}</div>
-                  <div>Insertadas en base de datos: {ingestReport.upserted}</div>
-                  <div>Rango de fechas: {ingestReport.fromDate} a {ingestReport.toDate}</div>
+            <span style={{ fontSize: "28px", flexShrink: 0, opacity: ingestReport ? 1 : 0.4, transition: "opacity 0.3s" }}>🗄️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <div style={{ fontWeight: "700", color: DARK_BLUE, fontSize: "13px", letterSpacing: "0.06em", opacity: ingestReport ? 1 : 0.4, transition: "opacity 0.3s" }}>
+                  RESULTADOS DE LA ACTUALIZACIÓN
                 </div>
-              ) : (
-                <div style={{ fontSize: "13px", color: "#aaa" }}>—</div>
-              )}
+                <button
+                  onClick={handleIngest}
+                  disabled={ingesting}
+                  style={{
+                    padding: "5px 14px",
+                    backgroundColor: DARK_BLUE,
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontWeight: "600",
+                    fontSize: "13px",
+                    cursor: ingesting ? "not-allowed" : "pointer",
+                    opacity: ingesting ? 0.65 : 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  {ingesting ? "Actualizando..." : "Actualizar Datos"}
+                </button>
+              </div>
+              <div style={{ opacity: ingestReport ? 1 : 0.4, transition: "opacity 0.3s" }}>
+                {ingestReport ? (
+                  <div style={{ fontSize: "13px", color: CYAN, lineHeight: "1.8" }}>
+                    <div>Nuevas entradas desde API: {ingestReport.fetched}</div>
+                    <div>Insertadas en base de datos: {ingestReport.upserted}</div>
+                    <div>Rango de fechas: {ingestReport.fromDate} a {ingestReport.toDate}</div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: "13px", color: "#aaa" }}>—</div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Resultados encontrados */}
           <div style={{ ...cardStyle, display: "flex", alignItems: "flex-start", gap: "16px" }}>
             <span style={{ fontSize: "28px", flexShrink: 0 }}>📊</span>
-            <div>
-              <div style={{ fontWeight: "700", color: DARK_BLUE, fontSize: "13px", letterSpacing: "0.06em", marginBottom: "8px" }}>
-                RESULTADOS ENCONTRADOS:
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <div style={{ fontWeight: "700", color: DARK_BLUE, fontSize: "13px", letterSpacing: "0.06em" }}>
+                  RESULTADOS ENCONTRADOS
+                </div>
+                <button
+                  onClick={handleDownloadExcel}
+                  disabled={loading || totalCount === 0}
+                  style={{
+                    padding: "5px 14px",
+                    backgroundColor: CYAN,
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontWeight: "600",
+                    fontSize: "13px",
+                    cursor: (loading || totalCount === 0) ? "not-allowed" : "pointer",
+                    opacity: (loading || totalCount === 0) ? 0.55 : 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  Descarga registros
+                </button>
               </div>
               {!loading && totalCount > 0 ? (
                 <div style={{ fontSize: "13px", color: CYAN }}>
